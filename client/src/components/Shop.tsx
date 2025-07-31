@@ -1,20 +1,26 @@
 import React from 'react';
-import { ShopItem } from '../types';
-
-const shopItems: ShopItem[] = [
-  { sku: 'seed_tomato',  name: 'Помидорчик',  price: 1, type: 'seed',  emoji: '🍅', description: '+1 ур./час' },
-  { sku: 'booster_2x',   name: '×2 скорость', price: 5, type: 'booster', emoji: '🚀', description: '1 ч' },
-  { sku: 'decor_fountain', name: 'Фонтан', price: 25, type: 'decor', emoji: '⛲', description: '+100 красоты' },
-];
+import shopItems from '../data/shopItems.json';
 
 const Shop: React.FC = () => (
-  <div style={{ padding: 12 }}>
-    <h2>Магазин</h2>
+  <div style={{ padding: 12, fontFamily: 'Comic Sans MS, cursive' }}>
+    <h2>🛒 Магазин ({shopItems.length} товара)</h2>
     {shopItems.map(item => (
-      <div key={item.sku} style={{ marginBottom: 8 }}>
-        {item.emoji} {item.name} – {item.price} Stars
-        <br />
-        <small>{item.description}</small>
+      <div
+        key={item.sku}
+        style={{
+          marginBottom: 8,
+          border: '1px solid #ccc',
+          borderRadius: 8,
+          padding: 8,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <span>
+          {item.emoji} <strong>{item.name}</strong> — {item.description ?? ''}
+        </span>
+        <span>{item.price} ⭐</span>
       </div>
     ))}
   </div>
