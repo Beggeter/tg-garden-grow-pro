@@ -1,0 +1,6 @@
+body {
+  margin: 0;
+  font-family: 'Cartoon-Garden', sans-serif;
+  background: linear-gradient(to bottom, #a1d3ff 0%, #c6f7c6 100%);
+  overflow: hidden;
+}
