@@ -2,10 +2,12 @@ import React from 'react';
 import shopItems from '../data/shopItems.json';
 
 interface Props {
+  userId: number;
   onPlant: (seedType: string) => void;
+  onPay: (sku: string) => void;
 }
 
-const Shop: React.FC<Props> = ({ onPlant }) => (
+const Shop: React.FC<Props> = ({ userId, onPlant, onPay }) => (
   <div style={{ padding: 12, fontFamily: 'Comic Sans MS, cursive' }}>
     <h2>🛒 Магазин ({shopItems.length} товара)</h2>
     {shopItems.map(item => (
@@ -32,6 +34,14 @@ const Shop: React.FC<Props> = ({ onPlant }) => (
               style={{ marginLeft: 10 }}
             >
               Посадить
+            </button>
+          )}
+          {item.type === 'booster' && (
+            <button
+              onClick={() => onPay(item.sku)}
+              style={{ marginLeft: 10 }}
+            >
+              Купить бустер
             </button>
           )}
         </span>
