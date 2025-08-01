@@ -1,20 +1,16 @@
-import { useCallback } from 'react';
-import axios from 'axios';
+export const payWithStars = (sku: string, userId: number) => {
+  const payload = `sku:${sku}:userId:${userId}`;
 
-export const useStarsPayment = () => {
-  const pay = useCallback(async (sku: string, userId: number) => {
-    try {
-      const { data } = await axios.post('/api/createInvoice', { sku, userId });
-
-      if (window?.Telegram?.WebApp?.openInvoice) {
-        window.Telegram.WebApp.openInvoice(data.invoiceUrl);
-      } else {
-        window.open(data.invoiceUrl, '_blank');
-      }
-    } catch (err) {
-      console.error('Ошибка при оплате через Stars:', err);
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+    if (window.Telegram.WebApp?.pay) {
+      window.Telegram.WebApp.pay({
+        slug: sku,          // это товар из Stars Dashboard
+        payload: payload    // то, что ты получаешь в webhook
+      });
+    } else {
+      alert('tg.WebApp.pay недоступен');
     }
-  }, []);
-
-  return { pay };
+  } else {
+    alert('Запуск возможен только внутри Telegram');
+  }
 };
