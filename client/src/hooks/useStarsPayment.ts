@@ -1,16 +1,24 @@
-export const payWithStars = (sku: string, userId: number) => {
-  const payload = `sku:${sku}:userId:${userId}`;
+import { useEffect } from 'react';
 
-  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-    if (window.Telegram.WebApp?.pay) {
-      window.Telegram.WebApp.pay({
-        slug: sku,
-        payload: payload,
-      });
-    } else {
-      alert('tg.WebApp.pay недоступен');
-    }
-  } else {
-    alert('Запуск возможен только внутри Telegram');
+declare global {
+  interface Window {
+    Telegram?: any;
   }
+}
+
+export const useStarsPayment = () => {
+  useEffect(() => {
+    window.Telegram?.WebApp.ready();
+  }, []);
+
+  const pay = (sku: string, userId: number) => {
+    const payload = JSON.stringify({ sku, userId });
+    window.Telegram?.WebApp?.openInvoice({
+      slug: sku,
+      currency: 'XTR',
+      payload,
+    });
+  };
+
+  return { pay };
 };
