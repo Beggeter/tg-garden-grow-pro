@@ -1,0 +1,9 @@
+:root {
+  --bg-gradient: linear-gradient(135deg, #a1d3ff 0%, #c6f7c6 100%);
+  --green-light: #90ee90;
+  --green-dark: #228B22;
+  --accent-orange: #ff7f50;
+  --text-dark: #2c3e50;
+  --shadow: 0 4px 8px rgba(0,0,0,.15);
+}
+body { margin: 0; font-family: 'Comic Sans MS', cursive; background: var(--bg-gradient); }
