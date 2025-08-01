@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useTgUser } from '../hooks/useTgUser';
-import { fetchUser, harvestPlant } from '../services/api';
+import { fetchUser, harvestPlant, plantSeed } from '../services/api';
 import Shop from '../components/Shop';
 import { PlantCard } from '../components/PlantCard';
 import shopItems from '../data/shopItems.json';
+import { useStarsPayment } from '../hooks/useStarsPayment';
 
 interface Plant {
   id: string;
@@ -16,6 +17,7 @@ interface Plant {
 export const GardenPage: React.FC = () => {
   const user = useTgUser();
   const [plants, setPlants] = useState<Plant[]>([]);
+  const { pay } = useStarsPayment();
 
   const enrichPlant = (plant: any): Plant => {
     const match = shopItems.find(item => item.sku === plant.type);
@@ -45,10 +47,23 @@ export const GardenPage: React.FC = () => {
     }
   };
 
+  const handlePlant = async (type: string) => {
+    if (user?.id) {
+      await plantSeed({ userId: user.id, type });
+      loadPlants();
+    }
+  };
+
+  const handlePay = (sku: string) => {
+    if (user?.id) {
+      pay(sku, user.id);
+    }
+  };
+
   return (
     <div>
       <h1>Мой сад</h1>
-      <Shop />
+      {user?.id && <Shop userId={user.id} onPlant={handlePlant} onPay={handlePay} />}
       <div className="plant-grid">
         {plants.length > 0 ? (
           plants.map((plant, index) => (
