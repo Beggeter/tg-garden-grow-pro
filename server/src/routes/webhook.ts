@@ -1,35 +1,24 @@
-import { Router } from 'express';
+import express from 'express';
+import bodyParser from 'body-parser';
+const router = express.Router();
 
-const router = Router();
+router.use(bodyParser.json());
 
-router.post('/telegram-stars', async (req, res) => {
-  const body = req.body;
+router.post('/', async (req, res) => {
+  const { message } = req.body;
 
-  const payment = body?.message?.successful_payment;
-  const from = body?.message?.from;
+  if (message?.successful_payment) {
+    const payload = JSON.parse(message.successful_payment.invoice_payload);
+    const { sku, userId } = payload;
 
-  if (!payment || !from) return res.sendStatus(400);
+    console.log(`✅ Оплата получена: ${sku} от ${userId}`);
 
-  const { invoice_payload, currency, total_amount } = payment;
+    // TODO: Ваша логика - записать покупку, активировать бустер, добавить skin и т.д.
+    // Пример: если booster - активировать, если skin - сохранить в user profile
+    // Сейчас пока просто лог
 
-  if (currency !== 'XTR') {
-    console.warn('❗️ Оплата не в XTR — возможна подделка');
-    return res.sendStatus(400);
+    return res.sendStatus(200);
   }
-
-  const [_, sku, __, userIdStr] = invoice_payload.split(':');
-  const userId = parseInt(userIdStr, 10);
-
-  if (!sku || !userId) return res.sendStatus(400);
-
-  console.log(`✅ Оплата подтверждена:
-  SKU: ${sku}
-  UserID: ${userId}
-  From Telegram ID: ${from.id}
-  Сумма: ${total_amount} XTR`);
-
-  // TODO: Выдать товар пользователю
-  // Например: if (sku.startsWith('booster_')) { activateBooster(userId, sku); }
 
   return res.sendStatus(200);
 });
