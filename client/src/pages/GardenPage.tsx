@@ -4,7 +4,8 @@ import { fetchUser, harvestPlant, plantSeed } from '../services/api';
 import Shop from '../components/Shop';
 import { PlantCard } from '../components/PlantCard';
 import shopItems from '../data/shopItems.json';
-import { useStarsPayment } from '../hooks/useStarsPayment';
+import { payWithStars } from '../hooks/useStarsPayment';
+import { activateBooster } from '../db/localDb';
 
 interface Plant {
   id: string;
@@ -17,7 +18,6 @@ interface Plant {
 export const GardenPage: React.FC = () => {
   const user = useTgUser();
   const [plants, setPlants] = useState<Plant[]>([]);
-  const { pay } = useStarsPayment();
 
   const enrichPlant = (plant: any): Plant => {
     const match = shopItems.find(item => item.sku === plant.type);
@@ -55,8 +55,19 @@ export const GardenPage: React.FC = () => {
   };
 
   const handlePay = (sku: string) => {
-    if (user?.id) {
-      pay(sku, user.id);
+    if (!user?.id) return;
+
+    payWithStars(sku, user.id);
+
+    // Активируем локально — можно убрать, если webhook обрабатывает
+    const durationMap: Record<string, number> = {
+      booster_2x: 60 * 60 * 1000,           // 1 час
+      booster_3x: 2 * 60 * 60 * 1000,       // 2 часа
+      booster_auto_collect: 6 * 60 * 60 * 1000, // 6 часов
+    };
+
+    if (durationMap[sku]) {
+      activateBooster(sku, durationMap[sku]);
     }
   };
 
