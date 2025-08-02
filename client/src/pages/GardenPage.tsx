@@ -1,82 +1,95 @@
-import React, { useEffect, useState } from 'react';
-import { useTgUser } from '../hooks/useTgUser';
-import { fetchUser, harvestPlant, plantSeed } from '../services/api';
+import React, { useEffect, useState, useCallback } from 'react';
 import Shop from '../components/Shop';
-import { PlantCard } from '../components/PlantCard';
-import shopItems from '../data/shopItems.json';
-import { useStarsPayment } from '../hooks/useStarsPayment';
+import { loadGameState, saveGameState, getActiveBoosters } from '../db/localDb';
+import { calcHarvest, PLANT_RULES } from '../engine/plantManager';
+import PlantCard from '../components/PlantCard';
+import ActiveBoosters from '../components/ActiveBoosters';
+import GardenDecor from '../components/GardenDecor';
+import { payWithStars } from '../hooks/useStarsPayment';
 
 interface Plant {
-  id: string;
-  type: string;
+  sku: string;
   plantedAt: string;
-  name: string;
-  emoji: string;
 }
 
-export const GardenPage: React.FC = () => {
-  const user = useTgUser();
-  const [plants, setPlants] = useState<Plant[]>([]);
-  const { pay } = useStarsPayment();
+interface GameState {
+  plants: Plant[];
+  decors: string[];
+  currency: number;
+}
 
-  const enrichPlant = (plant: any): Plant => {
-    const match = shopItems.find(item => item.sku === plant.type);
-    return {
-      ...plant,
-      name: match?.name || '???',
-      emoji: match?.emoji || '🌱',
-    };
-  };
-
-  const loadPlants = () => {
-    if (user?.id) {
-      fetchUser(user.id).then(res => {
-        setPlants((res.data.plants || []).map(enrichPlant));
-      });
-    }
-  };
+const GardenPage: React.FC = () => {
+  const [state, setState] = useState<GameState>(() => loadGameState());
+  const [boosters, setBoosters] = useState(getActiveBoosters());
 
   useEffect(() => {
-    loadPlants();
-  }, [user]);
+    saveGameState(state);
+  }, [state]);
 
-  const handleHarvest = async (plantId: string) => {
-    if (user?.id) {
-      await harvestPlant(user.id, plantId);
-      loadPlants();
+  const updateBoosters = useCallback(() => {
+    setBoosters(getActiveBoosters());
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(updateBoosters, 30000); // Проверка бустеров каждые 30 секунд
+    return () => clearInterval(interval);
+  }, [updateBoosters]);
+
+  const handlePlant = (sku: string) => {
+    if (state.plants.length >= 20) {
+      alert('🌱 Максимум растений уже посажен!');
+      return;
     }
+    setState(prev => ({
+      ...prev,
+      plants: [...prev.plants, { sku, plantedAt: new Date().toISOString() }]
+    }));
   };
 
-  const handlePlant = async (type: string) => {
-    if (user?.id) {
-      await plantSeed({ userId: user.id, type });
-      loadPlants();
-    }
+  const handleHarvest = (index: number) => {
+    const plant = state.plants[index];
+    const rule = PLANT_RULES[plant.sku];
+    const harvestedAmount = calcHarvest(new Date(plant.plantedAt), rule, boosters);
+
+    setState(prev => ({
+      ...prev,
+      currency: prev.currency + harvestedAmount,
+      plants: prev.plants.filter((_, idx) => idx !== index)
+    }));
   };
 
-  const handlePay = (sku: string) => {
-    if (user?.id) {
-      pay(sku, user.id);
-    }
+  const handlePurchase = (sku: string) => {
+    payWithStars(sku, 12345);
+    alert(`✅ Покупка ${sku} успешно завершена!`);
+    // Дополнительно реализовать логику активации предметов и декора
   };
 
   return (
-    <div>
-      <h1>Мой сад</h1>
-      {user?.id && <Shop userId={user.id} onPlant={handlePlant} />}
-      <div className="plant-grid">
-        {plants.length > 0 ? (
-          plants.map((plant, index) => (
-            <PlantCard
-              key={plant.id || index}
-              plant={plant}
-              onHarvest={() => handleHarvest(plant.id)}
-            />
-          ))
-        ) : (
-          <p>Здесь пока ничего не растёт 🌱</p>
-        )}
+    <div className="garden-container">
+      <h1 className="garden-title">🌱 Мой прекрасный сад</h1>
+
+      <Shop userId={12345} onPlant={handlePlant} onPurchase={handlePurchase} />
+
+      <ActiveBoosters boosters={boosters} />
+
+      <div className="garden-field">
+        {state.plants.map((plant, index) => (
+          <PlantCard
+            key={index}
+            plant={plant}
+            harvestableAmount={calcHarvest(new Date(plant.plantedAt), PLANT_RULES[plant.sku], boosters)}
+            onHarvest={() => handleHarvest(index)}
+          />
+        ))}
+      </div>
+
+      <GardenDecor items={state.decors} />
+
+      <div className="currency-display">
+        💰 Твои звёзды: <strong>{state.currency} XTR ⭐️</strong>
       </div>
     </div>
   );
 };
+
+export default GardenPage;
